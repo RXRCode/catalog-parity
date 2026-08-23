@@ -7,6 +7,7 @@ Catalog Parity is an offline, deterministic CLI for comparing source and target 
 **Status:** v0.1.x pre-release / early open source.
 
 Catalog Parity is an independent open-source project by [RXR Code](https://rxrcode.dev/open-source/catalog-parity).
+It is published on npm as [`@rxrcode/catalog-parity`](https://www.npmjs.com/package/@rxrcode/catalog-parity).
 
 ## Why this exists
 
@@ -22,17 +23,7 @@ The comparison runs locally. Catalog data is not uploaded to RXR Code or any thi
 
 ## Quick start
 
-The npm package is prepared for publication but is not yet available from the public registry. Until it is published, clone the repository and install it locally:
-
-```bash
-git clone https://github.com/RXRCode/catalog-parity.git
-cd catalog-parity
-npm install
-npm run build
-npm link
-```
-
-After npm publication, the equivalent clean-directory command will be:
+Run the published CLI without installing it globally:
 
 ```bash
 npx @rxrcode/catalog-parity@0.1.1 compare source.csv target.csv \
@@ -41,9 +32,21 @@ npx @rxrcode/catalog-parity@0.1.1 compare source.csv target.csv \
   --field price
 ```
 
-Compare the included example exports:
+Or install the command globally:
 
 ```bash
+npm install --global @rxrcode/catalog-parity
+catalog-parity --help
+```
+
+To compare the repository's included example exports:
+
+```bash
+git clone https://github.com/RXRCode/catalog-parity.git
+cd catalog-parity
+npm install
+npm run build
+
 catalog-parity compare examples/source.csv examples/target.csv \
   --key sku \
   --field title \
