@@ -3,6 +3,7 @@ export { CatalogParityError } from "./core/error.js";
 export { formatJson, formatTerminal } from "./core/format.js";
 export { loadCatalog } from "./core/load.js";
 export { parseFieldMappings, parseMapping } from "./core/mapping.js";
+export { VERSION } from "./version.js";
 export type {
   CatalogDifference,
   CatalogRecord,

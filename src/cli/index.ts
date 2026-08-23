@@ -7,6 +7,7 @@ import { CatalogParityError } from "../core/error.js";
 import { formatJson, formatTerminal } from "../core/format.js";
 import { loadCatalog } from "../core/load.js";
 import { parseFieldMappings, parseMapping } from "../core/mapping.js";
+import { VERSION } from "../version.js";
 
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
@@ -28,7 +29,7 @@ type CompareCommandOptions = {
 const program = new Command()
   .name("catalog-parity")
   .description("Compare commerce catalog exports before migrations and integrations go live.")
-  .version("0.1.0");
+  .version(VERSION);
 
 program
   .command("compare")
