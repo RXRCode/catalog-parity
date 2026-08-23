@@ -22,7 +22,7 @@ The comparison runs locally. Catalog data is not uploaded to RXR Code or any thi
 
 ## Quick start
 
-Clone the repository and install dependencies:
+The npm package is prepared for publication but is not yet available from the public registry. Until it is published, clone the repository and install it locally:
 
 ```bash
 git clone https://github.com/RXRCode/catalog-parity.git
@@ -30,6 +30,15 @@ cd catalog-parity
 npm install
 npm run build
 npm link
+```
+
+After npm publication, the equivalent clean-directory command will be:
+
+```bash
+npx @rxrcode/catalog-parity@0.1.1 compare source.csv target.csv \
+  --key sku \
+  --field title \
+  --field price
 ```
 
 Compare the included example exports:
@@ -157,7 +166,9 @@ npm install
 npm run check
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/architecture.md](docs/architecture.md), and [SECURITY.md](SECURITY.md).
+`npm run check` also packs the publishable artifact, installs it into a clean temporary project, runs the installed binary, verifies its exit codes, and imports the public library entry point.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/architecture.md](docs/architecture.md), [docs/npm-release.md](docs/npm-release.md), and [SECURITY.md](SECURITY.md).
 
 ## License
 
