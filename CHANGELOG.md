@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## Unreleased
+## 0.1.2 - 2026-08-26
 
 - Distinguish missing fields from explicit `null` values in comparison results.
 - Escape terminal control characters from catalog identifiers and CLI error output.
