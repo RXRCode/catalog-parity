@@ -1,6 +1,6 @@
 {
   "name": "@rxrcode/catalog-parity",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Compare commerce catalog exports before migrations and integrations go live.",
   "type": "module",
   "main": "./dist/index.js",
