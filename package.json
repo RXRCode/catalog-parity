@@ -68,7 +68,7 @@
   },
   "dependencies": {
     "commander": "^14.0.0",
-    "csv-parse": "^6.1.0",
+    "csv-parse": "^7.0.2",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
