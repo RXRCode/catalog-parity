@@ -15,7 +15,7 @@ function options(overrides: Partial<Parameters<typeof compareCatalogs>[2]> = {})
 }
 
 describe("compareCatalogs", () => {
-  it("reports parity across CSV-style and JSON-style primitive values", () => {
+  it("keeps exact decimal-string differences visible across CSV-style and JSON-style values", () => {
     const result = compareCatalogs(
       [{ sku: "MUG-1", title: "Studio Mug", price: "18.50" }],
       [{ sku: "MUG-1", title: "Studio Mug", price: 18.5 }],
@@ -83,5 +83,83 @@ describe("compareCatalogs", () => {
         options(),
       ),
     ).toThrow(CatalogParityError);
+  });
+
+  it("distinguishes a missing field from an explicit null", () => {
+    const result = compareCatalogs(
+      [{ sku: "MUG-1" }],
+      [{ sku: "MUG-1", title: null }],
+      options({ fields: parseFieldMappings(["title"]) }),
+    );
+
+    expect(result.parity).toBe(false);
+    expect(result.fieldMismatchCount).toBe(1);
+    expect(result.differences[0]).toMatchObject({
+      kind: "field_mismatch",
+      sourcePresent: false,
+      targetPresent: true,
+      targetValue: null,
+    });
+  });
+
+  it("treats the same field missing on both sides as equal", () => {
+    const result = compareCatalogs(
+      [{ sku: "MUG-1" }],
+      [{ sku: "MUG-1" }],
+      options({ fields: parseFieldMappings(["title"]) }),
+    );
+
+    expect(result.parity).toBe(true);
+  });
+
+  it("rejects circular values instead of overflowing the stack", () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    expect(() =>
+      compareCatalogs(
+        [{ sku: "MUG-1", metadata: circular }],
+        [{ sku: "MUG-1", metadata: {} }],
+        options({ fields: parseFieldMappings(["metadata"]) }),
+      ),
+    ).toThrow(/circular references/);
+  });
+
+  it("can bound recorded differences while keeping complete counts", () => {
+    const result = compareCatalogs(
+      [
+        { sku: "A", title: "source-a" },
+        { sku: "B", title: "source-b" },
+        { sku: "C", title: "source-c" },
+      ],
+      [
+        { sku: "A", title: "target-a" },
+        { sku: "B", title: "target-b" },
+        { sku: "C", title: "target-c" },
+      ],
+      options({ fields: parseFieldMappings(["title"]), maxRecordedDifferences: 1 }),
+    );
+
+    expect(result.parity).toBe(false);
+    expect(result.fieldMismatchCount).toBe(3);
+    expect(result.totalDifferenceCount).toBe(3);
+    expect(result.differences).toHaveLength(1);
+    expect(result.differencesTruncated).toBe(true);
+  });
+
+  it("rejects invalid recorded-difference limits", () => {
+    expect(() =>
+      compareCatalogs([], [], options({ maxRecordedDifferences: -1 })),
+    ).toThrow(/non-negative integer/);
+  });
+
+  it("rejects class instances in compared values", () => {
+    expect(() =>
+      compareCatalogs(
+        [{ sku: "MUG-1", updatedAt: new Date("2026-01-01T00:00:00Z") }],
+        [{ sku: "MUG-1", updatedAt: "2026-01-01T00:00:00.000Z" }],
+        options({ fields: parseFieldMappings(["updatedAt"]) }),
+      ),
+    ).toThrow(/plain objects/);
   });
 });

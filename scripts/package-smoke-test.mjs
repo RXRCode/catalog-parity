@@ -8,7 +8,7 @@ const repositoryRoot = dirname(fileURLToPath(new URL("../package.json", import.m
 const packageJson = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
 const temporaryRoot = await mkdtemp(join(tmpdir(), "catalog-parity-package-"));
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const childEnvironment = { ...process.env };
+const childEnvironment = { ...process.env, NO_COLOR: "1" };
 delete childEnvironment.npm_config_dry_run;
 delete childEnvironment.NPM_CONFIG_DRY_RUN;
 childEnvironment.npm_config_cache = join(temporaryRoot, "npm-cache");
@@ -112,6 +112,48 @@ try {
   );
   assert(differenceResult.stdout.includes("Catalog differences found"), "Installed CLI did not report drift.");
 
+  const outputPath = join(consumerDirectory, "parity-report.json");
+  await writeFile(targetPath, "sku,title,price\nMUG-1,Studio Mug,18.50\n");
+  run(
+    executable,
+    ["compare", sourcePath, targetPath, "--field", "price", "--format", "json", "--output", outputPath],
+    { cwd: consumerDirectory },
+  );
+  const overwriteResult = run(
+    executable,
+    ["compare", sourcePath, targetPath, "--field", "price", "--format", "json", "--output", outputPath],
+    { cwd: consumerDirectory, expectedStatus: 2 },
+  );
+  assert(overwriteResult.stderr.includes("already exists"), "CLI did not protect an existing output file.");
+  run(
+    executable,
+    [
+      "compare",
+      sourcePath,
+      targetPath,
+      "--field",
+      "price",
+      "--format",
+      "json",
+      "--output",
+      outputPath,
+      "--force",
+    ],
+    { cwd: consumerDirectory },
+  );
+
+  const maliciousSource = join(consumerDirectory, "malicious-source.json");
+  const maliciousTarget = join(consumerDirectory, "malicious-target.json");
+  const maliciousKey = "SKU\u001b]8;;https://example.com\u0007bad";
+  await writeFile(maliciousSource, JSON.stringify([{ sku: maliciousKey }]));
+  await writeFile(maliciousTarget, "[]");
+  const terminalSafety = run(executable, ["compare", maliciousSource, maliciousTarget], {
+    cwd: consumerDirectory,
+    expectedStatus: 1,
+  });
+  assert(!terminalSafety.stdout.includes("\u001b"), "CLI emitted a raw terminal escape from catalog input.");
+  assert(terminalSafety.stdout.includes("\\x1b"), "CLI did not render the escaped terminal control character.");
+
   const libraryCheckPath = join(consumerDirectory, "verify-library.mjs");
   await writeFile(
     libraryCheckPath,
@@ -119,6 +161,10 @@ try {
       'import { VERSION, compareCatalogs } from "@rxrcode/catalog-parity";',
       `if (VERSION !== ${JSON.stringify(packageJson.version)}) throw new Error("Library version mismatch");`,
       'if (typeof compareCatalogs !== "function") throw new Error("Missing compareCatalogs export");',
+      'const options = { key: { source: "sku", target: "sku", label: "sku" }, fields: [{ source: "title", target: "title", label: "title" }], ignoreCase: false, trimStrings: true, ignoreExtra: false };',
+      'const missingVsNull = compareCatalogs([{ sku: "MUG-1" }], [{ sku: "MUG-1", title: null }], options);',
+      'if (missingVsNull.parity) throw new Error("Missing field incorrectly matched explicit null");',
+      'if (missingVsNull.differences[0]?.kind !== "field_mismatch" || missingVsNull.differences[0].sourcePresent !== false) throw new Error("Missing-field presence metadata is incorrect");',
     ].join("\n"),
   );
   run(process.execPath, [libraryCheckPath], { cwd: consumerDirectory });

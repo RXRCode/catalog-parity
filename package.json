@@ -33,7 +33,9 @@
     "test:package": "node scripts/package-smoke-test.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:package",
     "prepublishOnly": "npm run check",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "benchmark": "npm run build && node scripts/benchmark.mjs",
+    "security": "npm audit --omit=dev --audit-level=high"
   },
   "engines": {
     "node": ">=20"
