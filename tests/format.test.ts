@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from "node:util";
 import { describe, expect, it } from "vitest";
 import { compareCatalogs } from "../src/core/compare.js";
 import { escapeTerminalText, formatJson, formatTerminal } from "../src/core/format.js";
@@ -71,7 +72,7 @@ describe("missing value reporting", () => {
       },
     );
 
-    expect(formatTerminal(result)).toContain("source: <missing>");
+    expect(stripVTControlCharacters(formatTerminal(result))).toContain("source: <missing>");
     const json = JSON.parse(formatJson(result)) as { differences: Array<Record<string, unknown>> };
     expect(json.differences[0]).toMatchObject({
       sourcePresent: false,
