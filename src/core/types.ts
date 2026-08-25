@@ -12,6 +12,7 @@ export type CompareOptions = {
   ignoreCase: boolean;
   trimStrings: boolean;
   ignoreExtra: boolean;
+  maxRecordedDifferences?: number;
 };
 
 export type MissingInTargetDifference = {
@@ -28,6 +29,8 @@ export type FieldMismatchDifference = {
   kind: "field_mismatch";
   key: string;
   field: FieldMapping;
+  sourcePresent: boolean;
+  targetPresent: boolean;
   sourceValue: unknown;
   targetValue: unknown;
 };
@@ -48,5 +51,7 @@ export type CompareResult = {
   mismatchedRecordCount: number;
   key: FieldMapping;
   fields: FieldMapping[];
+  totalDifferenceCount: number;
+  differencesTruncated: boolean;
   differences: CatalogDifference[];
 };

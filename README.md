@@ -110,7 +110,7 @@ catalog-parity compare source.csv target.csv \
   --output parity-report.json
 ```
 
-This makes the CLI suitable for CI migration gates and repeatable reconciliation jobs.
+Field mismatches include `sourcePresent` and `targetPresent` flags so machine consumers can distinguish a missing field from an explicit `null`. This makes the CLI suitable for CI migration gates and repeatable reconciliation jobs. Existing output files are protected by default; pass `--force` only when overwriting is intentional.
 
 ## Options
 
@@ -120,11 +120,12 @@ This makes the CLI suitable for CI migration gates and repeatable reconciliation
     --source-path <path>      path to the source record array in JSON
     --target-path <path>      path to the target record array in JSON
     --format <format>         terminal or json
--o, --output <file>          write the report to a file
+-o, --output <file>          write the report to a new file
+    --force                  allow --output to overwrite an existing file
     --ignore-case             compare keys and strings without case sensitivity
     --no-trim                 preserve leading and trailing whitespace
     --ignore-extra            allow records found only in the target
-    --max-differences <n>     terminal detail limit (default: 50)
+    --max-differences <n>     terminal detail/storage limit (default: 50)
 ```
 
 Running with no `--field` options checks record presence only.
@@ -133,11 +134,14 @@ Running with no `--field` options checks record presence only.
 
 - Records are matched by one required key.
 - Duplicate or missing keys fail validation rather than hiding ambiguity.
+- Missing fields are distinct from fields explicitly set to `null`.
 - Strings are trimmed by default.
 - Primitive CSV and JSON values compare by their string representation.
 - Nested objects are compared with stable key ordering.
+- Compared library values must be JSON-compatible; circular references, class instances, and unsupported primitives fail validation.
 - Target-only records are differences unless `--ignore-extra` is supplied.
 - Difference ordering is deterministic for reviewable CI output.
+- Terminal mode retains only the configured `--max-differences` detail records while still counting every difference; JSON mode retains the complete difference list.
 
 ## MVP boundaries
 
@@ -169,7 +173,17 @@ npm install
 npm run check
 ```
 
-`npm run check` also packs the publishable artifact, installs it into a clean temporary project, runs the installed binary, verifies its exit codes, and imports the public library entry point.
+`npm run check` also packs the publishable artifact, installs it into a clean temporary project, runs the installed binary, verifies its exit codes and output-file protections, and imports the public library entry point.
+
+For repeatable local performance checks after changing the comparison hot path:
+
+```bash
+npm run benchmark
+# or choose record counts explicitly
+npm run benchmark -- 25000 100000
+```
+
+Run the production dependency audit separately with `npm run security`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/architecture.md](docs/architecture.md), [docs/npm-release.md](docs/npm-release.md), and [SECURITY.md](SECURITY.md).
 

@@ -4,7 +4,7 @@ import { Command } from "commander";
 import pc from "picocolors";
 import { compareCatalogs } from "../core/compare.js";
 import { CatalogParityError } from "../core/error.js";
-import { formatJson, formatTerminal } from "../core/format.js";
+import { escapeTerminalText, formatJson, formatTerminal } from "../core/format.js";
 import { loadCatalog } from "../core/load.js";
 import { parseFieldMappings, parseMapping } from "../core/mapping.js";
 import { VERSION } from "../version.js";
@@ -20,6 +20,7 @@ type CompareCommandOptions = {
   targetPath?: string;
   format: string;
   output?: string;
+  force: boolean;
   ignoreCase: boolean;
   trim: boolean;
   ignoreExtra: boolean;
@@ -41,13 +42,14 @@ program
   .option("--source-path <path>", "dot path to the source array inside JSON")
   .option("--target-path <path>", "dot path to the target array inside JSON")
   .option("--format <format>", "terminal or json", "terminal")
-  .option("-o, --output <file>", "write the report to a file")
+  .option("-o, --output <file>", "write the report to a new file")
+  .option("--force", "allow --output to overwrite an existing file", false)
   .option("--ignore-case", "compare keys and string fields without case sensitivity", false)
   .option("--no-trim", "preserve leading and trailing string whitespace")
   .option("--ignore-extra", "do not fail for records found only in the target", false)
   .option("--max-differences <number>", "maximum differences shown in terminal output", "50")
   .action(async (source: string, target: string, options: CompareCommandOptions) => {
-    if (!['terminal', 'json'].includes(options.format)) {
+    if (!["terminal", "json"].includes(options.format)) {
       throw new CatalogParityError("--format must be terminal or json.");
     }
 
@@ -67,12 +69,26 @@ program
       ignoreCase: options.ignoreCase,
       trimStrings: options.trim,
       ignoreExtra: options.ignoreExtra,
+      maxRecordedDifferences: options.format === "terminal" ? maxDifferences : undefined,
     });
     const report = options.format === "json" ? formatJson(result) : formatTerminal(result, maxDifferences);
 
     if (options.output) {
-      await writeFile(options.output, `${report}\n`, "utf8");
-      console.log(pc.green(`Report written to ${options.output}`));
+      try {
+        await writeFile(options.output, `${report}\n`, {
+          encoding: "utf8",
+          flag: options.force ? "w" : "wx",
+        });
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "EEXIST") {
+          throw new CatalogParityError(
+            `Output file ${JSON.stringify(options.output)} already exists. Use --force to overwrite it.`,
+          );
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        throw new CatalogParityError(`Could not write output file: ${message}`);
+      }
+      console.log(pc.green(`Report written to ${escapeTerminalText(options.output)}`));
     } else {
       console.log(report);
     }
@@ -82,6 +98,7 @@ program
 
 program.parseAsync().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(pc.red(error instanceof CatalogParityError ? message : `Unexpected error: ${message}`));
+  const display = error instanceof CatalogParityError ? message : `Unexpected error: ${message}`;
+  console.error(pc.red(escapeTerminalText(display)));
   process.exitCode = 2;
 });

@@ -18,12 +18,13 @@ Do not commit an npm token or a user-level `.npmrc` file.
 Use Node.js 20 or 22:
 
 ```bash
-npm ci --ignore-scripts
+npm ci --ignore-scripts --no-audit --no-fund
 npm run check
+npm run security
 npm publish --dry-run
 ```
 
-`npm run check` builds the package, packs it, installs that tarball into a clean temporary project, runs the installed CLI, checks parity and difference exit codes, and imports the public library entry point.
+`npm run check` builds the package, packs it, installs that tarball into a clean temporary project, runs the installed CLI, checks parity/difference exit codes, verifies output overwrite protection and terminal escaping, and imports the public library entry point. `npm run security` separately audits production dependencies.
 
 Review the dry-run output and confirm that the tarball contains only the compiled `dist` files, package metadata, README, changelog, and license.
 
